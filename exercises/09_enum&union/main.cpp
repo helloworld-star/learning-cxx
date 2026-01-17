@@ -37,6 +37,19 @@ ColorEnum convert_by_pun(Color c) {
 
     TypePun pun;
     // TODO: 补全类型双关转换
+    /** union 双关: 同一块内存 同样的值（hex）不同数据类型 **/
+
+    pun.c = c;
+
+    union IntFloatPun {
+        int i;
+        float f;
+    };
+
+    /** int: 50 转成 float: 不是 50.0 而是 7.00649e-44 **/
+    IntFloatPun ifpun;
+    ifpun.i = 50;
+    std::cout << "int: " << ifpun.i << " float:" << ifpun.f << std::endl;
 
     return pun.e;
 }

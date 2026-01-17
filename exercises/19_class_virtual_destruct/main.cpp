@@ -5,12 +5,13 @@
 
 struct A {
     // TODO: 正确初始化静态字段
-    static int num_a = 0;
+    inline static int num_a = 0;
 
     A() {
         ++num_a;
     }
-    ~A() {
+    /** 保证通过基类指针删除派生类对象时 派生类的析构函数也会被调用 **/
+    virtual ~A() {
         --num_a;
     }
 
@@ -20,7 +21,8 @@ struct A {
 };
 struct B final : public A {
     // TODO: 正确初始化静态字段
-    static int num_b = 0;
+    /** inline static 可在类定义中定义 可指定初始化器 无需进行类外定义 **/
+    inline static int num_b = 0;
 
     B() {
         ++num_b;
@@ -37,26 +39,33 @@ struct B final : public A {
 int main(int argc, char **argv) {
     auto a = new A;
     auto b = new B;
-    ASSERT(A::num_a == ?, "Fill in the correct value for A::num_a");
-    ASSERT(B::num_b == ?, "Fill in the correct value for B::num_b");
-    ASSERT(a->name() == '?', "Fill in the correct value for a->name()");
-    ASSERT(b->name() == '?', "Fill in the correct value for b->name()");
+    // A 被调用两次
+    ASSERT(A::num_a == 2, "Fill in the correct value for A::num_a");
+    ASSERT(B::num_b == 1, "Fill in the correct value for B::num_b");
+    ASSERT(a->name() == 'A', "Fill in the correct value for a->name()");
+    ASSERT(b->name() == 'B', "Fill in the correct value for b->name()");
 
     delete a;
+    // ~A 被调用一次
+    ASSERT(A::num_a == 1, "Every A was destroyed");
     delete b;
     ASSERT(A::num_a == 0, "Every A was destroyed");
     ASSERT(B::num_b == 0, "Every B was destroyed");
 
+    // 声明指针不调用构造函数 B 调用 A() B() A 的虚函数被覆盖
+    // 无对象 指针
     A *ab = new B;// 派生类指针可以随意转换为基类指针
-    ASSERT(A::num_a == ?, "Fill in the correct value for A::num_a");
-    ASSERT(B::num_b == ?, "Fill in the correct value for B::num_b");
-    ASSERT(ab->name() == '?', "Fill in the correct value for ab->name()");
+    ASSERT(A::num_a == 1, "Fill in the correct value for A::num_a");
+    ASSERT(B::num_b == 1, "Fill in the correct value for B::num_b");
+    ASSERT(ab->name() == 'B', "Fill in the correct value for ab->name()");
 
     // TODO: 基类指针无法随意转换为派生类指针，补全正确的转换语句
-    B &bb = *ab;
-    ASSERT(bb.name() == '?', "Fill in the correct value for bb->name()");
+    // 有对象 引用
+    B &bb = dynamic_cast<B&>(*ab);
+    ASSERT(bb.name() == 'B', "Fill in the correct value for bb->name()");
 
     // TODO: ---- 以下代码不要修改，通过改正类定义解决编译问题 ----
+    // 通过基类指针删除派生类对象
     delete ab;// 通过指针可以删除指向的对象，即使是多态对象
     ASSERT(A::num_a == 0, "Every A was destroyed");
     ASSERT(B::num_b == 0, "Every B was destroyed");
